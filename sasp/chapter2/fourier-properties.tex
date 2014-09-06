@@ -1,0 +1,87 @@
+\documentclass[11pt]{article}
+
+\begin{document}
+
+\section*{Properties of DTFT} \indent
+
+\subsection*{Linearity} \indent
+
+\[\alpha x_1 + \beta x_2 \leftrightarrow \alpha X_1 + \beta X_2\]
+
+\subsection*{Time Reversal} \indent
+
+$FLIP\{x\} = x(-n)$,
+\[FLIP\{x\} \leftrightarrow\{X\}\]
+
+$FLIP'\{x\} = x^*(-n)$,
+\[FLIP'\{x\} \leftrightarrow X^*\]
+
+If $x(n) \in R$,
+\[FLIP(x) \leftrightarrow X^*\]
+
+\subsection*{DTFT of Real Signal}
+
+\[x(n) \in R \leftrightarrow X(-\omega) = X^*(\omega)\]
+
+\subsubsection*{Real Even Signal} \indent
+
+DTFT is real and even.
+
+\subsubsection*{Real Odd Signal} \indent
+
+DTFT is imaginary and odd.
+
+\subsection*{Shift Theorem} \indent
+
+$SHIFT_{l,n}(x) = x(n-l)$,
+\[DTFT_\omega\{SHIFT_l\{x\}\} = e^{-j\omega l} X(\omega)\]
+
+\subsection*{Convolution Theorem} \indent
+
+$(x * y) = \sum_{n=-\infty}^{\infty} x(m) y(n-m)$,
+\[x * y = X \cdot Y\]
+
+\subsection*{Correlation Theorem} \indent
+
+$(x \star y) = \sum_m x^*(m) y(m+n)$,
+\[x \star y \leftrightarrow X^* \cdot Y\]
+
+\subsubsection*{Autocorrelation} \indent
+
+\[x \star x \leftrightarrow |x|^2\]
+
+\subsection*{Power Theorem} \indent
+
+\[\langle x, y\rangle = \langle X, Y\rangle\]
+
+\subsubsection*{Energy Theorem} \indent
+
+\[||x||^2 = ||X||^2\]
+
+\subsection*{Stretch/Repeat Theorem} \indent
+
+\[STRETCH_{L, n}(x) = x(\frac{n}{L}), n \% L = 0; 0, \texttt{otherwise}\]
+\[REPEAT_{L, v}(X) = X(L\omega), \omega \in [-\frac{\pi}{L}, \frac{\pi}{L}], v \in [-\pi, \pi]\]
+
+\[STRETCH_L(x) \leftrightarrow REPEAT_L(X)\]
+
+\subsection*{Downsampling/Aliasing Theorem} \indent
+
+\[DOWNSAMPLE_{M, N}(x) = x(Mn)\]
+\[ALIAS_{M, W}(x) = \sum_{k=0}^{M-1} X(\omega + k\frac{2\pi}{M})\]
+
+\subsection*{Differentiation Theorem} \indent
+
+\[-jn x(n) \leftrightarrow \frac{d}{d\omega}X(e^{j\omega})\]
+
+\subsubsection*{Corollary}
+
+\[-n x(n) \leftrightarrow \frac{d}{d(j\omega)X(e^{j\omega})}\]
+
+\section*{Properties of FT} \indent
+
+\subsection*{Scaling Theorem}
+
+\[x(\frac{t}{\alpha}) \leftrightarrow |a|X(\alpha\omega)\]
+
+\end{document}
