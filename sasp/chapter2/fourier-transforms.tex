@@ -1,0 +1,44 @@
+\documentclass[11pt]{article}
+
+\begin{document}
+
+\section*{Fourier Transforms} \indent
+
+\[X(\omega) = \langle x, s_\omega\rangle\]
+
+DFT - Finite discrete time, finite discrete frequency.
+
+\[X(k) = \sum_{n=0}^{N-1} x(n)e^{-j\omega_kn}\]
+\[s_\omega(t) = e^{j\frac{2\pi}{N}nk}\]
+
+$\omega_k$ is given by the angles of N points uniformly distributed along the unit circle in complex plane.
+
+\bigskip
+
+DTFT - Infinite discrete time, finite continuous frequency.
+
+\[X(\omega) = \sum_{n=-\infty}^{+\infty} x(n)e^{-j\omega n}\]
+\[s_\omega(t) = e^{j\omega n}\]
+
+As N approaches $\infty$, a continuous frequency axis result along unit circle.
+
+\bigskip
+
+FS - Finite continuous time, finite discrete frequency.
+
+\[X(k) = \int_0^p x(t) e^{-j\omega_kt} dt\]
+
+FT - Infinite continuous time, infinite continuous frequency.
+
+\[X(\omega) = \int_{-\infty}^{+\infty} x(t) e^{-j\omega t} dt\]
+\[s_\omega(t) = e^{j\omega t}\]
+
+Existence:
+
+\[x \in L_1, ||x||_1 = \int_{-\infty}^\infty |x(t)| dt < \infty\]
+
+or,
+
+\[x \in L_2, ||x||_2^2 = \int_{-\infty}^\infty |x(t)|^2 dt < \infty\]
+
+\end{document}
