@@ -1,0 +1,36 @@
+\documentclass[11pt]{article}
+
+\begin{document}
+
+\section*{Spectral Interpolation} \indent
+
+\subsection*{Ideal Spectral Interpolation} \indent
+
+\[X(\omega) = \langle x, s_\omega \rangle = \sum_{n=-\infty}^{\infty} x(n) e^{-j\omega n} = \sum_{n=-\frac{N}{2}}^{\frac{N}{2}-1} x(n)e^{-j\omega n}\]
+
+Zero-centered DFT, $\omega \in [-\pi, \pi]$, finite support.
+
+\subsection*{Interpolating a DFT}
+
+\[X(\omega) = \langle X, SAMPLE_N\{SHIFT_\omega\{asinc_N\}\}\rangle\]
+
+\subsection*{Practical Zeropadding}
+
+\[X(\omega_L) = FFT_{NL, l}\{ZEROPAD_{NL}\{IFFT_N\{X\}\}\}, \quad l = 0, ..., LN-1\]
+
+\subsection*{Zero-phase Zeropadding} \indent
+
+Window length = $M$, odd integer
+
+FFT length = $N > M$, power of 2.
+
+Windowed data:
+\begin{itemize}
+\item $0 \to \frac{M-1}{2}$ for positive.
+\item $N - \frac{M-1}{2} \to N-1$ for negative.
+\item $\frac{M-1}{2} + 1 \to N - \frac{M-1}{2} - 1$ for zero.
+\end{itemize}
+
+Necessary to accomodate spectral modifications.
+
+\end{document}
