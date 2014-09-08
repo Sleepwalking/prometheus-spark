@@ -1,0 +1,37 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section*{Rectangular Window}
+
+\begin{equation*}
+w_R(n) =
+\begin{cases}
+1, &-\frac{M-1}{2} \leq n \leq \frac{M-1}{2} \\
+0, &\textit{otherwise}
+\end{cases}
+\end{equation*}
+
+\begin{equation*}
+W_R(\omega) = \frac{\sin(M\frac{\omega}{2})}{\sin(\frac{\omega}{2})} = M \cdot asinc_M(\omega)
+\end{equation*}
+
+\subsection*{Causal Case}
+
+\begin{equation*}
+W^c_R(\omega) = e ^ {-j\frac{M-1}{2}\omega} \cdot M \cdot asinc_M(\omega)
+\end{equation*}
+
+For zero-centered symmetric windows, we obtain real window transforms. Phase of $W_R(\omega)$ is 0 of $|\omega| < \frac{2\pi}{M}$, which is the size of mainlobe. $\pi$ occurs in side lobes.
+
+\begin{itemize}
+\item Main-lobe width = $\frac{4\pi}{M} rad$
+\item Side-lobe level = 13dB down, roll-off 6dB/octave
+\item Side-lobe width = $\Omega_M = \frac{2\pi}{M}$
+\item Zero crossing at integer multiples of $\Omega_M$
+\end{itemize}
+
+The abruptness of window discontinuity in the time domain is also what determines the side-lobe roll-off rate.
+
+\end{document}

@@ -1,0 +1,60 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section*{Generalized Hamming Window Family}
+
+\begin{equation*}
+W_H(\omega) = \alpha W_R(\omega) + \beta W_R(\omega - \Omega_M) + \beta W_R(\omega + \Omega_M)
+\end{equation*}
+
+Three rectangular window transforms overlapped to cancel side-lobe.
+
+\begin{itemize}
+\item Main-lobe width = $4\Omega_M$
+\item Zero crossings at intervals of $\Omega_M$ out of main lobe.
+\end{itemize}
+
+Shift theorem applied:
+\begin{align*}
+w_H &= \alpha w_R(n) + \beta e^{-j\Omega_Mn} w_R(n) + \beta e^{j\Omega_Mn}w_R(n) \\
+    &= w_R(n) [\alpha + 2\beta \cos(\frac{2\pi n}{M})]
+\end{align*}
+
+\subsection*{Hann/Hanning/Raised Cosine}\indent
+
+$\alpha = \frac{1}{2},\quad \beta = \frac{1}{4}$,
+
+\[w_H(n) = w_R(n) \cos^2(\frac{\Omega_M}{2}n)\]
+
+\begin{itemize}
+\item First side-lobe = -31.5dB
+\item Roll-off = 18dB/octave
+\end{itemize}
+
+\subsection*{Hamming Window}\indent
+
+Cancel the largest side-lobe (Chebyshev Generalized Hamming Window). Equiripple error, minimizing the worse case.
+
+$\alpha \approx 0.54,\quad \beta \approx 0.23$
+
+\begin{itemize}
+\item Peak side-lobe level = -43.76dB
+\item Roll-off = 6dB/octave
+\item Discontinuity at end points by 0.08
+\end{itemize}
+
+\subsection*{MLT Sine Window}\indent
+
+\[w(n) = \sin[(n + \frac{1}{2}) \frac{\pi}{2M}],\quad n = 0, 1, 2, ..., 2M-1\]
+
+\begin{itemize}
+\item Side-lobe level = -24dB
+\item Zero-phase window transform has smallest moment of inertia,
+
+\[\int_{-\pi}^{\pi} \omega^2 W(\omega) d\omega = min\]
+
+\end{itemize}
+
+\end{document}
