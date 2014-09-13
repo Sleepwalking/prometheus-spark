@@ -1,0 +1,59 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section*{Blackman-Harris Window Family} \indent
+
+\[w_{BH}(n) = w_R(n) \sum_{l=0}^{L-1} \alpha_l \cos(l\Omega_{Mn})\]
+
+\[W_{BH}(\omega) = \sum_{-(L-1)}^{L-1} \alpha_k W_R(\omega + k\Omega_M)\]
+
+\begin{itemize}
+\item L = 1, Rectangular window;
+\item L = 2, Generalized Hamming Family;
+\item L = 3, Blackman Family.
+\end{itemize}
+
+\[w_B(n) = w_R(n)[\alpha_0 + \alpha_1 \cos(\Omega_{Mn}) + \alpha_2 \cos(2\Omega_{Mn})]\]
+
+\begin{itemize}
+\item $\alpha_0$, normalize amplitude;
+\item $\alpha_1 / \alpha_2$, roll-off rate;
+\item $\alpha_1 / \alpha_2$, side-lobe rejection.
+\end{itemize}
+
+\subsection*{Classic Blackman} \indent
+
+$\alpha_0 = 0.42, \alpha_1 = 0.5, \alpha_2 = 0.08$
+
+\begin{itemize}
+\item Side-lobe roll-off: 18dB/octave
+\item Side-lobe maximum: -58dB
+\end{itemize}
+
+\subsection*{Three-term Blackman-Harris Window} \indent
+
+Both degrees of freedom are used to minimize side-lobe level,
+
+$\alpha_0 = 0.4243801, \alpha_1 = 0.4973406, \alpha_2 = 0.0782793$
+
+\begin{itemize}
+\item Side-lobe roll-off: 6dB/octave
+\item Side-lobe maximum: -71.48dB
+\end{itemize}
+
+\section*{Power-of-Cosine Window Family}
+
+\[w(n) = w_R(n) \cos^p \left(\frac{\pi n}{M}\right)\]
+
+Roll-off = $6(p + 1)$/octave
+
+\begin{itemize}
+\item p = 0, Rectangular;
+\item p = 1, MLT Sine;
+\item p = 2, Hanning;
+\item p = 4, Alternative Blackman(maximum roll-off rate)
+\end{itemize}
+
+\end{document}

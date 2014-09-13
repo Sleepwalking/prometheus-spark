@@ -1,0 +1,25 @@
+\documentclass[11pt]{article}
+\usepackage{amsmath}
+
+\begin{document}
+
+\section*{Poisson Window} \indent
+
+\[w_P(n) = w_R(n) e^{-\alpha \frac{|n|}{\frac{M-1}{2}}}\]
+
+$\frac{M-1}{2\alpha}$ samples across time domain.
+
+Radially contracts the unit circle in the z-plane.
+
+\[H_P(z) = H(\frac{z}{r}),\quad r = e^{\frac{\alpha}{M/2}}\]
+
+\subsection*{Hann-Poisson Window} \indent
+
+\[w(n) = \frac{1}{2} [1 + \cos(\pi \frac{n}{\frac{M-1}{2}})] e^{-\alpha \frac{|n|}{\frac{M-1}{2}}}\]
+
+\begin{itemize}
+\item No side lobes
+\item Negative slope for all positive frequencies when $a \geq 2$
+\end{itemize}
+
+\end{document}
