@@ -33,3 +33,15 @@
 
 * Prerequisite: `window method for FIR design`, `DTFT of real signal`, `linearity of DTFT`， `aliasing`
 * Origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Hilbert_Transform_Design_Example.html)
+
+####Minimum Phase Filter Design
+
+* Summary: Non-linear phase characteristic, same amplitude response, less delay.
+* Prerequisite: `hilbert transform`, `z transform`
+* Origin: [dspguru](http://www.dspguru.com/dsp/faqs/fir/properties) [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Minimum_Phase_Filter_Design.html)
+
+####Optimal FIR Design
+
+* Summary: Chebyshev FIR Filters, Least-Squares FIR Filters and so on.
+* Prerequisite: `linear algebra`, `DTFT`, `LMS`， `linear programming`
+* Origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Optimal_FIR_Digital_Filter.html)
