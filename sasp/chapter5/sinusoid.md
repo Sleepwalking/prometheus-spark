@@ -28,3 +28,21 @@ origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Frequency_Resolution.ht
 prerequisite: `window`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Sinusoidal_Peak_Interpolation.html)
+
+####Zeropadding for Optimal Peak-Finding
+
+prerequisite: `spectral peak interpolation`, `resolution of sinusoids`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Optimal_Peak_Finding_Spectrum.html)
+
+####Least Square Sinusoid Estimation
+
+prerequisite: `linear algebra`, `sinusoid`, `DTFT`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Least_Squares_Sinusoidal_Parameter.html)
+
+####Maximum Likelihood Sinusoid Estimation
+
+prerequisite: `least square sinusoid estimation`, `basic-probability`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Maximum_Likelihood_Sinusoid_Estimation.html)
