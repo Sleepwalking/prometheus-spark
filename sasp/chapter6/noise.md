@@ -27,3 +27,21 @@ origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Cyclic_Autocorrelation.h
 prerequisite: `sample power spectral density`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Periodogram.html)
+
+####Welch's Method
+
+prerequisite: `periodogram`, `cyclic autocorrelation`
+
+origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Welch_s_Method.html) [JOS/SASP2](https://ccrma.stanford.edu/~jos/sasp/Welch_s_Method_Windows.html)
+
+####Filtered White Noise
+
+prerequisite: `convolution theorem, sample power spectral density`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Filtered_White_Noise.html)
+
+####Signal Noise Ratio
+
+prerequisite: `DFT`, `sample power spectral density`
+
+origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Processing_Gain.html) [JOS/SASP2](https://ccrma.stanford.edu/~jos/sasp/Panning_Problem.html)
