@@ -15,3 +15,27 @@ origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Convolution_Short_Signal
 prerequisite: `convolution`, `zero padding`, `shift operator`
 
 origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Cyclic_FFT_Convolution.html) [JOS/SASP2](https://ccrma.stanford.edu/~jos/sasp/Acyclic_FFT_Convolution.html) [JOS/SASP3](https://ccrma.stanford.edu/~jos/sasp/Acyclic_FFT_Convolution_Matlab.html)
+
+####STFT Convolution
+
+prerequisite: `window`, `FFT convolution`, `aliasing`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Convolving_Long_Signals.html)
+
+####Poisson Summation Formula
+
+prerequisite: `DFT`, `alias operator`, `sampling theorem`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Poisson_Summation_Formula.html)
+
+####COLA Constraints
+
+prerequisite: `poisson summation formula`, `OLA STFT processing`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Frequency_Domain_COLA_Constraints.html)
+
+####PSF Dual
+
+prerequisite: `COLA constraints`, `filter banks`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/PSF_Dual_Graphical_Equalizers.html)
