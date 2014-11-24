@@ -39,3 +39,21 @@ origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Frequency_Domain_COLA_Co
 prerequisite: `COLA constraints`, `filter banks`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/PSF_Dual_Graphical_Equalizers.html)
+
+####Overlap-Save Method
+
+prerequisite: `STFT convolution`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Overlap_Save_Method.html)
+
+####Time-varying OLA Modifications
+
+prerequisite: `STFT convolution`, `FIR filtering`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Time_Varying_OLA_Modifications.html)
+
+####Weighted Overlap Add
+
+prerequisite: `STFT convolution`, `COLA constraints`, `MLT sine window`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Weighted_Overlap_Add.html)
