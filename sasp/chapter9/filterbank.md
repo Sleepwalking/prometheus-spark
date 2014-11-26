@@ -21,3 +21,9 @@ origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Modulation_Complex_Sinus
 prerequisite: `running sum lowpass filter`, `complex sinusoid modulation`, `STFT FBS interpretation`
 
 origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Uniform_Running_Sum_Filter_Banks.html) [JOS/SASP2](https://ccrma.stanford.edu/~jos/sasp/FBS_Window_Constraints_R_1.html) [JOS/SASP3](https://ccrma.stanford.edu/~jos/sasp/Nyquist_N_Windows.html)
+
+####Downsampled STFT Filter bank
+
+prerequisite: `DFT filter bank`, `COLA constraint`, `poisson summation formula`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Downsampled_STFT_Filter_Banks.html)
