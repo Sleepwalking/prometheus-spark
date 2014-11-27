@@ -27,3 +27,9 @@ origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Uniform_Running_Sum_Fil
 prerequisite: `DFT filter bank`, `COLA constraint`, `poisson summation formula`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Downsampled_STFT_Filter_Banks.html)
+
+####STFT FBS Modifications
+
+prerequisite: `DFT filter bank`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/STFT_Modifications.html)
