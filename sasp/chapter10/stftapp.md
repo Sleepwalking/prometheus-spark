@@ -26,4 +26,16 @@ origin: [JOS/SASP1](https://ccrma.stanford.edu/~jos/sasp/Linear_Prediction_Spect
 
 prerequisite: `spectrum analysis of sinusoids`, `STFT`
 
-origin: [JOS/SASP](file:///home/sleepwalking/Reference/net-src/ccrma.stanford.edu/~jos/sasp/Spectral_Modeling_Synthesis.html)
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Spectral_Modeling_Synthesis.html)
+
+####Time Scale Modification
+
+prerequisite: `spectral modeling synthesis`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Time_Scale_Modification.html)
+
+####Gaussian Windowed Chirps
+
+prerequisite: `FT`, `modulation theorem`, `shift theorem`, `gaussian window`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Gaussian_Windowed_Chirps_Chirplets.html)
