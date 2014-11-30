@@ -39,3 +39,9 @@ origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Time_Scale_Modification.
 prerequisite: `FT`, `modulation theorem`, `shift theorem`, `gaussian window`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Gaussian_Windowed_Chirps_Chirplets.html)
+
+####FFT Filter Bank(partial)
+
+prerequisite: `downsampled STFT filter bank`, `aliasing theorem`, `spectrogram`
+
+origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/FFT_Filter_Banks.html)
