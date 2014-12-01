@@ -40,8 +40,8 @@ prerequisite: `FT`, `modulation theorem`, `shift theorem`, `gaussian window`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/Gaussian_Windowed_Chirps_Chirplets.html)
 
-####FFT Filter Bank(partial)
+####FFT Filter Bank
 
-prerequisite: `downsampled STFT filter bank`, `aliasing theorem`, `spectrogram`
+prerequisite: `downsampled STFT filter bank`, `aliasing theorem`, `spectrogram`, `window`
 
 origin: [JOS/SASP](https://ccrma.stanford.edu/~jos/sasp/FFT_Filter_Banks.html)
