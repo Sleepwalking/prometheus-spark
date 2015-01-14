@@ -1,3 +1,5 @@
+<script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=default"></script>
+
 Gammatone滤波器组：性质、实现和应用
 ===
 
@@ -20,9 +22,20 @@ Gammatone滤波器组：性质、实现和应用
 
 * **需要**数字信号处理(DSP)基础，我个人推荐Coursera上[EPFL的DSP课](https://www.coursera.org/course/dsp)，或者CCRMA的[Spectral Audio Signal Processing](https://ccrma.stanford.edu/~jos/sasp/)一书；
 
+* **最好**会使用Matlab或Octave；
+
 * **最好**掌握一些单变量微积分；
 
 * **最好**了解一些音频处理，会很有帮助(例如Coursera上[UPF的ASPMA课](https://www.coursera.org/course/audio))。
+
+1. 什么是滤波器组
+---
+
+顾名思义，滤波器组就是一组(n个)滤波器，对同一个信号进行滤波，输出n个同步的信号。
+
+(test if MathJax works with Github)
+
+$$x=\frac{-b\pm\sqrt{b^2-4ac}}{2a}$$
 
 (撰写中，未完待续……)
 
