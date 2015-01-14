@@ -62,17 +62,17 @@ GTF滤波器的脉冲响应(impulse response)如下：
 
 <p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5734961/34821892-9bf9-11e4-9885-fe6d0acc2b8a.png"/></p>
 
-对一个指数函数作积分，得到的还是一个指数函数；指数函数在傅立叶变换后还是一个指数函数（准确来说是正负频率上共两个），所以不难想像GTF的频率响应具有一个被调制过的指数函数的形状（假如忽略掉<img src="http://latex.codecogs.com/gif.latex?t^{n - 1}"/>）。由于Gamma部分的指数是负的，傅立叶变换后的函数形状呈开口朝下。我们也可以看出b和滤波器带宽成正比。
+###2.2 频率响应
+
+我们可以想象一下GTF的频率响应的形状：如果把脉冲响应看作一个加窗的余弦波，那么窗的宽度决定了主瓣宽度，所以b决定了GTF的带宽。
 
 下图是一个GTF的频率响应(仅功率部分，对数幅度)：
 
 <p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5734963/37624dac-9bf9-11e4-9809-dbea0920143f.png"/></p>
 
-###2.1 频率响应
+###2.3 ERB带宽和3分贝带宽
 
-###2.2 ERB带宽和3分贝带宽
-
-###2.3 FIR实现
+###2.4 FIR实现
 
 3. GTF滤波器组
 ---
