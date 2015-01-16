@@ -1,14 +1,14 @@
 Gammatone滤波器组：性质、实现和应用
 ===
 
-本文是一篇对Gammatone滤波器组(Gammatone filter bank)的介绍，总结了此主题下的几篇重要论文（Darling-1991, Slaney-1993, Ellis-2009, 见末尾的引用部分）。
+本文是一篇对Gammatone滤波器组(Gammatone Filter Bank)的介绍，总结了此主题下的几篇重要论文（Darling-1991, Slaney-1993, Ellis-2009, 见末尾的引用部分）。
 
 0. 前言
 ---
 
 ###0.1 Gammatone滤波器组是干什么的？
 
-一种在语音识别、语音分析领域中常用的时频转换方法，作用类似短时傅立叶变换(STFT)，但Gammatone滤波器组(以下简称GTF滤波器组)结合了人耳的听觉特性。它是一种听觉滤波器组(auditory filter bank)。基于GTF的语音识别系统能获得较高的准确度。
+一种在语音识别、语音分析领域中常用的时频转换方法，作用类似短时傅立叶变换(STFT)，但Gammatone滤波器组(以下简称GTF滤波器组)结合了人耳的听觉特性。它是一种听觉滤波器组(Auditory Filter Bank)。基于GTF的语音识别系统能获得较高的准确度。
 
 ###0.2 这篇文章有什么用？
 
@@ -29,9 +29,9 @@ Gammatone滤波器组：性质、实现和应用
 1. 概念 - 什么是滤波器组？
 ---
 
-顾名思义，一个滤波器组(filter bank)就是一组(n个)滤波器，对同一个信号进行滤波，输出n个同步的信号。我们可以给每个滤波器指定不同的响应函数、中心频率、增益、带宽。
+顾名思义，一个滤波器组(Filter Bank)就是一组(n个)滤波器，对同一个信号进行滤波，输出n个同步的信号。我们可以给每个滤波器指定不同的响应函数、中心频率、增益、带宽。
 
-假如一个滤波器组中各个滤波器的频率按升序排列，各集中在不同的频率，且滤波器数量足够多，我们可以计算出在不同时间的各个输出信号的短时能量，画成一串功率频谱(power spectrum)，或连起来成为声谱图(spectrogram)。
+假如一个滤波器组中各个滤波器的频率按升序排列，各集中在不同的频率，且滤波器数量足够多，我们可以计算出在不同时间的各个输出信号的短时能量，画成一串功率频谱(Power Spectrum)，或连起来成为声谱图(Spectrogram)。
 
 这张来源于[维基](http://zh.wikipedia.org/wiki/%E6%A2%85%E5%B0%94%E9%A2%91%E7%8E%87%E5%80%92%E8%B0%B1%E7%B3%BB%E6%95%B0)的图片给出了一个滤波器组的频率响应的例子：
 
@@ -49,9 +49,11 @@ Gammatone滤波器组生成的声谱图是什么样的？我们先睹为快：
 
 在介绍GTF滤波器组前，我们需要先了解GTF滤波器。前者由多个不同参数的后者组成。
 
+本节先给出GTF滤波器的脉冲响应的定义，然后分别观察其时域和频域性质。最后借助matlab代码给出一个基于FIR滤波器的GTF滤波器实现。
+
 ###2.1 定义
 
-GTF是一种线性滤波器，其脉冲响应(impulse response)如下：
+GTF是一种线性滤波器，其脉冲响应(Impulse Response)如下：
 
 <p align="center"><img src="http://latex.codecogs.com/gif.latex?h(t) = \underbrace{ct^{n - 1} e^{- 2\pi bt}}_{\text{gamma}} \underbrace{cos(2\pi f_0 t + \phi)}_{\text{tone}}, t > 0"/></p>
 
@@ -60,7 +62,7 @@ GTF是一种线性滤波器，其脉冲响应(impulse response)如下：
 * c - 调节比例的常数；
 * n - 滤波器级数(order)，一般取4；
 * b - 衰减速度，取值为正数，b越大衰减越快，脉冲响应长度越短；
-* f0 - 中心频率，当f0 = 0，此时的GTF称为一个基带GTF(base band gammatone filter)；
+* f0 - 中心频率，当f0 = 0，此时的GTF称为一个基带GTF(Base Band Gammatone Filter)；
 * ɸ - 相位，由于人耳对相位不敏感，可以省略；
 * 这是连续时间下的定义，所以t单位为秒，f0单位为Hz，对于离散时间只需采样即可。
 
@@ -148,10 +150,66 @@ y = conv(h, x);      % 相当于和输入信号卷积
 
 由于脉冲响应的衰减很快，可以截取`h`，仅保留值较大的部分，可采用典型的窗函数法设计FIR滤波器。这样的好处是节省计算量，然而对于f0较低的情况，脉冲响应的衰减很慢，计算开销很难避免。对于GTF滤波器，FIR实现方式的计算开销平均比IIR实现慢了两、三个数量级，所以实际应用中FIR采用得较少。
 
-GTF滤波器组
+3. GTF滤波器组
 ---
 
+本节介绍如何实现GTF滤波器组。首先我们引入临界频带的概念，从而计算出各GTF滤波器的中心频率和ERB。然后介绍GTF滤波器组的两种最常用的IIR实现。最后概括地介绍一种基于短时傅立叶变换(STFT)的快速近似实现。
+
 ###3.1 ERB临界频带
+
+临界频带(Critical Band)是人的耳蜗的“滤波器”，在这个带宽内若同时存在两个声调，人对声调的感受会受干扰，产生听觉掩蔽效应(即一个强的音盖过一个弱的音)。临界频带的带宽即是前面提到的ERB。当然，我们的听觉系统比较复杂，在不同频率上的临界频带的带宽是不同的，而且随频率升高而升高，Moore和Glasberg于1990年提出如下经验公式，计算特定频率上的ERB：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?ERB(f) = 24.7 * (0.00437f + 1)"/></p>
+
+其中f单位为Hz，ERB(f)单位亦为Hz。
+
+当我们决定设计一个有N个频道的GTF滤波器组时，如何确定每个频道的中心频率和带宽？假定有一个固定频率间隔sf，通过对<img src="http://latex.codecogs.com/gif.latex?\frac{1}{ERB(f)\cdot sf}" style="height:28px"/>作积分，可以获得一个将频率映射到频道编号(1至N)的函数。其反函数可把频道编号映射到频率：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?f_0(n) = -228.7 + \frac{\frac{fs}{2} + 228.7}{e^{ 0.108 n \cdot sf}}}"/></p>
+
+其中n为频道编号，fs为采样频率。设f为最低频率cf，且编号等于N时(因为耳蜗上频率的分布是颠倒的，所以采取了逆向编号顺序)，解得sf：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?sf = \frac{1}{N}\{9.26[\log(\frac{fs}{2} + 228.7) - \log(cf + 228.7)]\}"/></p>
+
+这样获得sf，再把sf带回f0(n)中，即求得了N个频道的中心频率。然后用ERB(f)计算各个频道的带宽，再代入2.3.1中b = 1.019ERB的关系中，即可获得各个GTF滤波器的参数。
+
+ERB频率计算的matlab实现：
+
+```matlab
+function CF = make_erb_freqs(fs, n_channel)
+    SF = 1 / n_channel * 9.26 * (log(fs + 228.7) - log(20 + 228.7));
+    CF = - 228.7 + (fs + 228.7) ./ exp(0.108 * (1:n_channel)' * SF);
+end
+function ERB = erb_bandwidth(f0)
+    B = 24.7 * (0.00437 * f0 + 1);
+end
+```
+
+测试运行：
+
+```
+octave:1> make_erb_freqs(8000, 10)'
+ans =
+
+ Columns 1 through 7:
+
+   5570.511   3858.317   2651.639   1801.227   1201.895    779.512    481.836
+
+ Columns 8 through 10:
+
+    272.047    124.198     20.000
+
+octave:2> erb_bandwidth(ans)
+ans =
+
+ Columns 1 through 8:
+
+   626.267   441.365   311.054   219.217   154.494   108.881    76.734    54.079
+
+ Columns 9 and 10:
+
+    38.112    26.860
+```
 
 ###3.2 全极点IIR实现
 
