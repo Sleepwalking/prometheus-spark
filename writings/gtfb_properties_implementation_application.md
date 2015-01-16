@@ -31,7 +31,7 @@ Gammatone滤波器组：性质、实现和应用
 
 顾名思义，一个滤波器组(filter bank)就是一组(n个)滤波器，对同一个信号进行滤波，输出n个同步的信号。我们可以给每个滤波器指定不同的响应函数、中心频率、增益、带宽。
 
-假如一个滤波器组中各个滤波器的频率按升续排列，各集中在不同的频率，且滤波器数量足够多，我们可以计算出在不同时间的各个输出信号的短时能量，画成一串功率频谱(power spectrum)，或连起来成为声谱图(spectrogram)。
+假如一个滤波器组中各个滤波器的频率按升序排列，各集中在不同的频率，且滤波器数量足够多，我们可以计算出在不同时间的各个输出信号的短时能量，画成一串功率频谱(power spectrum)，或连起来成为声谱图(spectrogram)。
 
 这张来源于[维基](http://zh.wikipedia.org/wiki/%E6%A2%85%E5%B0%94%E9%A2%91%E7%8E%87%E5%80%92%E8%B0%B1%E7%B3%BB%E6%95%B0)的图片给出了一个滤波器组的频率响应的例子：
 
@@ -44,17 +44,18 @@ Gammatone滤波器组：性质、实现和应用
 
 ###2.1 定义
 
-GTF滤波器的脉冲响应(impulse response)如下：
+GTF是一种线性滤波器，其脉冲响应(impulse response)如下：
 
 <p align="center"><img src="http://latex.codecogs.com/gif.latex?h(t) = \underbrace{ct^{n - 1} e^{- 2\pi bt}}_{\text{gamma}} \underbrace{cos(2\pi f_0 t + \phi)}_{\text{tone}}, t > 0"/></p>
 
 其中，
 
-* c - 调节比例的常数
-* n - 滤波器级数(order)，一般取4
-* b - 衰减速度，取值为正数，b越大衰减越快，脉冲响应长度越短
-* f0 - 中心频率，当f0 = 0，此时的GTF称为一个基带GTF(base band gammatone filter)
-* ɸ - 相位，由于人耳对相位不敏感，可以省略
+* c - 调节比例的常数；
+* n - 滤波器级数(order)，一般取4；
+* b - 衰减速度，取值为正数，b越大衰减越快，脉冲响应长度越短；
+* f0 - 中心频率，当f0 = 0，此时的GTF称为一个基带GTF(base band gammatone filter)；
+* ɸ - 相位，由于人耳对相位不敏感，可以省略；
+* 这是连续时间下的定义，所以t单位为秒，f0单位为Hz，对于离散时间只需采样即可。
 
 我们可以看到，时域上GTF就是一个Gamma分布乘上一个余弦信号，所以叫做“Gammatone”。也可以理解成一个余弦信号把这个Gamma分布调制到f0这个频率上。
 
@@ -64,13 +65,55 @@ GTF滤波器的脉冲响应(impulse response)如下：
 
 ###2.2 频率响应
 
-我们可以想象一下GTF的频率响应的形状：如果把脉冲响应看作一个加窗的余弦波，那么窗的宽度决定了主瓣宽度，所以b决定了GTF的带宽。
+我们可以想象一下GTF的频率响应的形状：如果把脉冲响应看作一个加窗的余弦波，那么窗的宽度决定了主瓣宽度，所以b决定了GTF的带宽：b越大，窗越小，主瓣宽度越窄，GTF的带宽越窄。
 
 下图是一个GTF的频率响应(仅功率部分，对数幅度)：
 
 <p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5734963/37624dac-9bf9-11e4-9809-dbea0920143f.png"/></p>
 
+因为这是一篇着重于应用的文章，这里省略GTF频率响应的解析表达式推导过程，直接给出该表达式如下：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?H(f) = \frac{c}{2}(n - 1)! (2\pi b)^{-n} [P(f) + P^*(-f)]"/></p>
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?\text{where } P(f) = e^{i\phi}[1 + i\frac{(f - f_0)}{b}]^{-n}"/></p>
+
+P(f)与P*(f)可看作正频率和负频率上的两个共轭对称的峰。这符合实数函数的傅立叶变换的对称性。
+
+P(f)和“b越大，带宽越窄”的预测是一致的，且当f = f0时，P(F)有最大值<img src="http://latex.codecogs.com/gif.latex?e^{i\phi}"/>。需注意的是这不是H(f)的最大值，或者说在中心频率处，频率响应不是最大，因为H(f)的值取决于P(f)和P*(-f)的和。
+
+GTF滤波器的功率频谱函数，即<img src="http://latex.codecogs.com/gif.latex?|H(f)|^2"/>十分复杂，略。有兴趣的读者请参考Darling-1991。但是当**f0相对于b足够大**时，
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?H(f) \approx \frac{c}{2}(n - 1)! (2\pi b)^{-n} P(f),\quad \forall f \geq 0"/></p>
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?H(f) \approx \frac{c}{2}(n - 1)! (2\pi b)^{-n} P^*(-f),\quad \forall f < 0"/></p>
+
+所以此时，
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?|H(f)|^2 \approx [\frac{c}{2}(n - 1)! (2\pi b)^{-n}]^2 [1 + \frac{(|f| - f_0)^2}{b^2}]^{-n}"/></p>
+
+大多情况下我们不需要相位信息，所以这里不介绍相位谱函数的表达式。
+
 ###2.3 ERB带宽和3分贝带宽
+
+####2.3.1 GTF的等效矩形带宽
+等效矩形带宽(Equivalent Rectangular Bandwidth)指一种矩形带通滤波器的带宽，这中矩形带通滤波器的**高度和某个特定滤波器的功率谱最大值相同**，且**通带功率和这个特定滤波器的功率相同**。
+
+换句话说，给定一个任意的功率谱，可以计算出一个等效矩形滤波器，这个矩形带通滤波器的增益就是给定功率谱的最大值，而该矩形滤波器的功率谱的总和和给定功率谱的总和相同。在这个条件下，可以计算出矩形滤波器的带宽，这就是ERB。
+
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5772052/c3e4f42c-9d85-11e4-8c54-aba2bae95a03.png" style="width:350px"/></p>
+
+一图胜过千言万语。上图是一个形象的例子。三角形代表一个三角滤波器，虚线矩形代表它的等效矩形滤波器。它们的高度相等、面积相等。此时矩形滤波器的带宽即为ERB。
+
+GTF滤波器的ERB为，
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?ERB = \frac{(2n-2)! 2^{2-2n} \pi}{[(n-1)!]^2}b"/></p>
+
+这很棒，因为对于一个给定的阶数n，ERB仅依赖于b，且关系是线性的。当n为4时，ERB = 0.98175b。我们也可以从一个给定的ERB求出b：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?b \approx 1.019 ERB"/></p>
+
+我们稍后会看到，ERB和人耳的听觉特性有关联。上述转换关系的作用是，我们可以用它方便地针对人耳听觉特性设计出GTF滤波器，这是十分有用的。
+
+####2.3.1 GTF的3分贝带宽
 
 ###2.4 FIR实现
 
