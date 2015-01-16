@@ -37,6 +37,13 @@ Gammatone滤波器组：性质、实现和应用
 
 <p align="center"><img src="http://i.stack.imgur.com/YUH48.gif" style="width:400px"/><p align="center">(这是一个梅尔滤波器组，由12个三角带通滤波器组成)</p></p>
 
+Gammatone滤波器组生成的声谱图是什么样的？我们先睹为快：
+
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5774035/84d7b0de-9da4-11e4-9b2b-496f315db1e3.png" style="width:600px"/><p align="center">
+(这是cmu_slt_arctic语料库中的第一句话，使用的GTF滤波器组包含64个滤波器)
+</p></p>
+
+
 2. GTF滤波器的定义与性质
 ---
 
@@ -65,7 +72,7 @@ GTF是一种线性滤波器，其脉冲响应(impulse response)如下：
 
 ###2.2 频率响应
 
-我们可以想象一下GTF的频率响应的形状：如果把脉冲响应看作一个加窗的余弦波，那么窗的宽度决定了主瓣宽度，所以b决定了GTF的带宽：b越大，窗越小，主瓣宽度越窄，GTF的带宽越窄。
+我们可以想象一下GTF的频率响应的形状：如果把脉冲响应看作一个加窗的余弦波，那么窗的宽度决定了主瓣宽度，所以b决定了GTF的带宽：**b越大，窗越小，主瓣宽度越窄，GTF的带宽越窄**。
 
 下图是一个GTF的频率响应(仅功率部分，对数幅度)：
 
@@ -79,9 +86,9 @@ GTF是一种线性滤波器，其脉冲响应(impulse response)如下：
 
 P(f)与P*(f)可看作正频率和负频率上的两个共轭对称的峰。这符合实数函数的傅立叶变换的对称性。
 
-P(f)和“b越大，带宽越窄”的预测是一致的，且当f = f0时，P(F)有最大值<img src="http://latex.codecogs.com/gif.latex?e^{i\phi}"/>。需注意的是这不是H(f)的最大值，或者说在中心频率处，频率响应不是最大，因为H(f)的值取决于P(f)和P*(-f)的和。
+P(f)和“b越大，带宽越窄”的预测是一致的，且当f = f0时，P(F)有最大值![](http://latex.codecogs.com/gif.latex?e^{i%5cphi})。需注意的是这不是H(f)的最大值，或者说在中心频率处，频率响应不是最大，因为H(f)的值取决于P(f)和P*(-f)的和，这也说明了H(f)的正数部分或负数部分**并非关于f0(和-f0)对称**。
 
-GTF滤波器的功率频谱函数，即<img src="http://latex.codecogs.com/gif.latex?|H(f)|^2"/>十分复杂，略。有兴趣的读者请参考Darling-1991。但是当**f0相对于b足够大**时，
+GTF滤波器的功率频谱函数，即![](http://latex.codecogs.com/gif.latex?|H%28f%29|^2)十分复杂，略。有兴趣的读者请参考Darling-1991。但是当**f0相对于b足够大**时，
 
 <p align="center"><img src="http://latex.codecogs.com/gif.latex?H(f) \approx \frac{c}{2}(n - 1)! (2\pi b)^{-n} P(f),\quad \forall f \geq 0"/></p>
 <p align="center"><img src="http://latex.codecogs.com/gif.latex?H(f) \approx \frac{c}{2}(n - 1)! (2\pi b)^{-n} P^*(-f),\quad \forall f < 0"/></p>
@@ -111,13 +118,37 @@ GTF滤波器的ERB为，
 
 <p align="center"><img src="http://latex.codecogs.com/gif.latex?b \approx 1.019 ERB"/></p>
 
-我们稍后会看到，ERB和人耳的听觉特性有关联。上述转换关系的作用是，我们可以用它方便地针对人耳听觉特性设计出GTF滤波器，这是十分有用的。
+我们稍后会看到，ERB和人耳的听觉特性有关联。上述转换关系的作用是，我们可以用它方便地针对人耳听觉特性设计出合适的GTF滤波器，这是十分有用的。
 
-####2.3.1 GTF的3分贝带宽
+####2.3.2 GTF滤波器的3分贝带宽
+
+以信号幅度递减一半(相当于减弱3分贝)为标准，GTF滤波器的带宽近似于，
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_{3dB} \approx 2b\sqrt{2^{\frac{1}{n}} - 1}"/></p>
+
+相当于
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_{3dB} \approx 0.87b}"/></p>
+
+由于GTF频率响应的非对称性(见2.2)，我们无法求出准确的3分贝带宽。
 
 ###2.4 FIR实现
 
-3. GTF滤波器组
+GTF滤波器的最简易实现方法是按照脉冲响应的定义，在时域生成离散的脉冲响应，作为FIR对输入信号滤波：
+
+```matlab
+g = @(t, f0, erb) t .^ 3 .* exp(- 2 * pi * 1.019 * erb * t) .* ...
+    cos(2 * pi * f0 * t);
+h = g((0:1 / fs:signal_length / fs)', central_freq, band_width);
+y = filter(h, 1, x); % y = filter(B, A, x);
+y = conv(h, x);      % 相当于和输入信号卷积
+```
+
+这里省略了比例常数c，我们将稍后讨论增益如何控制的问题。
+
+由于脉冲响应的衰减很快，可以截取`h`，仅保留值较大的部分，可采用典型的窗函数法设计FIR滤波器。这样的好处是节省计算量，然而对于f0较低的情况，脉冲响应的衰减很慢，计算开销很难避免。对于GTF滤波器，FIR实现方式的计算开销平均比IIR实现慢了两、三个数量级，所以实际应用中FIR采用得较少。
+
+GTF滤波器组
 ---
 
 ###3.1 ERB临界频带
