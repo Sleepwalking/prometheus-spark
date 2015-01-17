@@ -39,11 +39,11 @@ Gammatone滤波器组：性质、实现和应用
 
 这张来源于[维基](http://zh.wikipedia.org/wiki/%E6%A2%85%E5%B0%94%E9%A2%91%E7%8E%87%E5%80%92%E8%B0%B1%E7%B3%BB%E6%95%B0)的图片给出了一个滤波器组的频率响应的例子：
 
-<p align="center"><img src="http://i.stack.imgur.com/YUH48.gif" style="width:400px"/><p align="center">(这是一个梅尔滤波器组，由12个三角带通滤波器组成)</p></p>
+<p align="center"><img src="http://i.stack.imgur.com/YUH48.gif" width="400"/><p align="center">(这是一个梅尔滤波器组，由12个三角带通滤波器组成)</p></p>
 
 Gammatone滤波器组生成的声谱图是什么样的？我们先睹为快：
 
-<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5774035/84d7b0de-9da4-11e4-9b2b-496f315db1e3.png" style="width:450px"/><p align="center">
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5774035/84d7b0de-9da4-11e4-9b2b-496f315db1e3.png" width="450"/><p align="center">
 (这是cmu_slt_arctic语料库中的第一句话，使用的GTF滤波器组包含64个滤波器)
 </p></p>
 
@@ -112,7 +112,7 @@ GTF滤波器的功率频谱函数，即![](http://latex.codecogs.com/gif.latex?|
 
 换句话说，给定一个任意的功率谱，可以计算出一个等效矩形滤波器，这个矩形带通滤波器的增益就是给定功率谱的最大值，而该矩形滤波器的功率谱的总和和给定功率谱的总和相同。在这个条件下，可以计算出矩形滤波器的带宽，这就是ERB。
 
-<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5772052/c3e4f42c-9d85-11e4-8c54-aba2bae95a03.png" style="width:350px"/></p>
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5772052/c3e4f42c-9d85-11e4-8c54-aba2bae95a03.png" width="400"/></p>
 
 一图胜过千言万语。上图是一个形象的例子。三角形代表一个三角滤波器，虚线矩形代表它的等效矩形滤波器。它们的高度相等、面积相等。此时矩形滤波器的带宽即为ERB。
 
@@ -229,7 +229,7 @@ ans =
 
 我们可以清楚地看到分子为一阶延迟(![](http://latex.codecogs.com/gif.latex?z^{-1}))，分母为二阶延迟。这个传递函数比较复杂，不过一旦给定了ERB和中心频率，可以计算出固定的滤波器参数，然后就能套用现成的IIR滤波函数。
 
-方便起见，我们可以省略常数项，然后把分母除以![](http://latex.codecogs.com/gif.latex?-4f_0\pi)。为了确保在中心频率增益为1，我们把f0带进去，计算出<img src="http://latex.codecogs.com/gif.latex?H_2(z)|_{z=e^{2\pi f_0 T}}"/>，然后设定IIR的唯一一个前馈系数为<img src="http://latex.codecogs.com/gif.latex?\frac{1}{|H_2(e^{2\pi f_0 T})|}"/>。
+方便起见，我们可以省略常数项，然后把分母除以<img src="http://latex.codecogs.com/gif.latex?-4f_0\pi"/>。为了确保在中心频率增益为1，我们把f0带进去，计算出<img src="http://latex.codecogs.com/gif.latex?H_2(z)|_{z=e^{2\pi f_0 T}}"/>，然后设定IIR的唯一一个前馈系数为<img src="http://latex.codecogs.com/gif.latex?\frac{1}{|H_2(e^{2\pi f_0 T})|}"/>。
 
 以上是设计单个全极点IIR滤波器的过程。只需将四个同样的IIR滤波器级联，或者说把输入信号用同一个滤波器处理四次，即可形成GTF滤波器的IIR实现。
 
