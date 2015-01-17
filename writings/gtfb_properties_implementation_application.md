@@ -26,6 +26,10 @@ Gammatone滤波器组：性质、实现和应用
 
 * **最好**了解一些音频处理，会很有帮助(例如Coursera上[UPF的ASPMA课](https://www.coursera.org/course/audio))。
 
+###0.4 声明
+
+作者本人买不起Matlab，所以这篇文章中所有的Matlab代码都是在[GNU Octave](http://www.gnu.org/software/octave/)上测试运行的，本人不保证代码不经修改即可在Matlab上执行。
+
 1. 概念 - 什么是滤波器组？
 ---
 
@@ -39,7 +43,7 @@ Gammatone滤波器组：性质、实现和应用
 
 Gammatone滤波器组生成的声谱图是什么样的？我们先睹为快：
 
-<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5774035/84d7b0de-9da4-11e4-9b2b-496f315db1e3.png" style="width:600px"/><p align="center">
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5774035/84d7b0de-9da4-11e4-9b2b-496f315db1e3.png" style="width:450px"/><p align="center">
 (这是cmu_slt_arctic语料库中的第一句话，使用的GTF滤波器组包含64个滤波器)
 </p></p>
 
@@ -173,7 +177,7 @@ y = conv(h, x);      % 相当于和输入信号卷积
 
 这样获得sf，再把sf带回f0(n)中，即求得了N个频道的中心频率。然后用ERB(f)计算各个频道的带宽，再代入2.3.1中b = 1.019ERB的关系中，即可获得各个GTF滤波器的参数。
 
-ERB频率计算的matlab实现：
+ERB频率计算的matlab实现(这里cf取20)：
 
 ```matlab
 function CF = make_erb_freqs(fs, n_channel)
@@ -212,6 +216,84 @@ ans =
 ```
 
 ###3.2 全极点IIR实现
+
+使用无限脉冲响应(IIR)滤波器产生和FIR滤波器近似的脉冲响应，IIR的阶数较低时，经常仍可以产生不错的近似，如果误差在可以接受的范围内，就能极大地减少计算负担。GTF滤波器作为一种听觉滤波器，在语音识别等应用场合往往没有过高的精度要求，可使用一个全极点滤波器代替FIR滤波器。
+
+1993年Slaney借助Mathematica设计出了一种由四个二阶全极点滤波器级联形成的GTF滤波器近似实现(具体方法是[脉冲响应不变法](https://ccrma.stanford.edu/~jos/pasp/Impulse_Invariant_Method.html)：计算出脉冲响应的拉普拉斯变换，进行部分分式分解，反向拉普拉斯变换回时域，采样，Z变换到频域获得传递函数)。为了减少计算开销，舍弃零点，成为四个传递函数一样的全极点滤波器，如下：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?H_2(z) = \frac{-2T\sin(2f_0\pi T)z^{-1}}{e^{BT}[-4f_0\pi + 8f_0\pi\cos(2f_0\pi T)e^{-BT}z^{-1} - 4f_0\pi e^{-2BT}z^{-2}]}"/></p>
+
+其中，
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B = 2\pi b = 2\pi \cdot 1.019ERB(f)"/></p>
+
+我们可以清楚地看到分子为一阶延迟(![](http://latex.codecogs.com/gif.latex?z^{-1}))，分母为二阶延迟。这个传递函数比较复杂，不过一旦给定了ERB和中心频率，可以计算出固定的滤波器参数，然后就能套用现成的IIR滤波函数。
+
+方便起见，我们可以省略常数项，然后把分母除以![](http://latex.codecogs.com/gif.latex?-4f_0\pi)。为了确保在中心频率增益为1，我们把f0带进去，计算出<img src="http://latex.codecogs.com/gif.latex?H_2(z)|_{z=e^{2\pi f_0 T}}"/>，然后设定IIR的唯一一个前馈系数为<img src="http://latex.codecogs.com/gif.latex?\frac{1}{|H_2(e^{2\pi f_0 T})|}"/>。
+
+以上是设计单个全极点IIR滤波器的过程。只需将四个同样的IIR滤波器级联，或者说把输入信号用同一个滤波器处理四次，即可形成GTF滤波器的IIR实现。
+
+以下是设计单个二阶全极点IIR滤波器的Matlab代码：
+
+```matlab
+% pass_freq和pass_band可以是包含多个频道参数的向量
+function [B, A] = make_erb_pass_allpole_cascade( ...
+  fs, pass_freq, pass_band)
+    T = 1 / fs;
+    f0 = pass_freq;
+    B = 1.019 * 2 * pi * pass_band;
+    E = exp(B * T);
+    n_channel = length(pass_freq);
+    
+    A = zeros(n_channel, 3);
+    B = zeros(n_channel, 2);
+    A(:, 1) = 1;
+    A(:, 2) = - 2 * cos(2 * f0 * pi * T) ./ E;
+    A(:, 3) = E .^ (-2);
+    cz = exp(- 2 * j * pi * f0 * T);
+    g = cz ./ (1 + A(:, 2) .* cz + A(:, 3) .* cz .^ 2);
+    B(:, 2) = 1 ./ abs(g);
+end
+```
+
+要设计一个GTF滤波器组只需把3.1中的`make_erb_freqs`函数和`make_erb_bandwidth`函数结合进去即可。这里为保证灵活性没有加入前者：
+
+```matlab
+function [B, A] = make_erb_bank_allpole_cascade(fs, bank_freq)
+    BW = erb_bandwidth(bank_freq);
+    [B A] = make_erb_pass_allpole_cascade(fs, bank_freq, BW);
+end
+```
+
+最后定义一个很简单的函数即可实现对输入信号的滤波：
+
+```matlab
+% B和A都可以是频道数量 * 阶数大小的矩阵
+% x是采样数 * 1大小的向量
+% y是采样数 * 频道数量大小的矩阵
+function y = gtf_allpole(B, A, x)
+    n_channel = rows(B);
+    y = zeros(length(x), n_channel);
+    for i = 1:n_channel
+        y(:, i) = filter(B(i, :), A(i, :), x);
+        y(:, i) = filter(B(i, :), A(i, :), y(:, i));
+        y(:, i) = filter(B(i, :), A(i, :), y(:, i));
+        y(:, i) = filter(B(i, :), A(i, :), y(:, i));
+    end
+end
+```
+
+使用范例：
+
+```matlab
+[x fs] = wavread("xxx.wav");
+n_channel = 64;
+c = make_erb_freqs(8000, n_channel);
+[B, A] = make_erb_bank_allpole_cascade(fs, c);
+Y = gtf_allpole(B, A, x);
+```
+
+最后，其实存在一种直接把四个二阶IIR合并成一个八阶IIR的方案，然而对于一些低频率的频道，浮点误差会被放大，造成不稳定性(极点离单位圆太近导致)。正如Slaney-1993中提出的八阶极点-零点实现方式，虽然效率稍高，但在中心频率小于500Hz时会变得不稳定，只能拆成多个低阶IIR使用(有意思的是这个问题最初是由SASP的作者Julius Smith在1995年指出，不免感叹世界真小)。
 
 ###3.3 极点-零点IIR实现
 
