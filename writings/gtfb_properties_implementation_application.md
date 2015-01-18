@@ -1,7 +1,7 @@
 Gammatone滤波器组：性质、实现和应用
 ===
 
-本文是一篇对Gammatone滤波器组(Gammatone Filter Bank)的介绍，总结了此主题下的几篇重要论文（Darling-1991, Slaney-1993, Ellis-2009, 见末尾的引用部分）。
+本文是一篇对Gammatone滤波器组(Gammatone Filter Bank)的介绍，总结了此主题下的几篇重要论文(Darling-1991, Slaney-1993, Ellis-2009, 见末尾的引用部分)。
 
 0. 前言
 ---
@@ -241,8 +241,8 @@ function [B, A] = make_erb_pass_allpole_cascade( ...
   fs, pass_freq, pass_band)
     T = 1 / fs;
     f0 = pass_freq;
-    B = 1.019 * 2 * pi * pass_band;
-    E = exp(B * T);
+    BW = 1.019 * 2 * pi * pass_band;
+    E = exp(BW * T);
     n_channel = length(pass_freq);
     
     A = zeros(n_channel, 3);
@@ -286,20 +286,132 @@ end
 使用范例：
 
 ```matlab
-[x fs] = wavread("xxx.wav");
+[x fs] = wavread('xxx.wav');
 n_channel = 64;
 c = make_erb_freqs(8000, n_channel);
 [B, A] = make_erb_bank_allpole_cascade(fs, c);
 Y = gtf_allpole(B, A, x);
 ```
 
-最后，其实存在一种直接把四个二阶IIR合并成一个八阶IIR的方案，然而对于一些低频率的频道，浮点误差会被放大，造成不稳定性(极点离单位圆太近导致)。正如Slaney-1993中提出的八阶极点-零点实现方式，虽然效率稍高，但在中心频率小于500Hz时会变得不稳定，只能拆成多个低阶IIR使用(有意思的是这个问题最初是由SASP的作者Julius Smith在1995年指出，不免感叹世界真小)。
+最后，其实存在一种直接把四个二阶IIR合并成一个八阶IIR的方案，然而对于一些低频率的频道，浮点误差会被放大，造成不稳定性(极点离单位圆太近导致)。正如Slaney-1993中提出的八阶极点-零点实现方式，虽然效率稍高，但在中心频率小于500Hz时会变得不稳定，只能拆成多个低阶IIR使用(有意思的是这个问题最初是由SASP的作者Julius Smith在1995年指出，不由感叹世界真小)。
+
+这种实现方式和其它实现方式的效果对比可在下一小节末尾看到。
 
 ###3.3 极点-零点IIR实现
 
+在上一小节的全极点实现方式中，零点由于较为复杂被省略，若加入零点，IIR的误差会大幅降低。这样生成的仍然是四个极点相同的二阶级联IIR滤波器，然而它们的零点不同。由于它们的极点和3.2中的一样，这里只给出零点(传递函数的分母)部分：
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?H_n(z) = \frac{B_n(z)}{A(z)}"/></p>
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_1(z) = -2T + \left(\cos(2f_0\pi T) + \sqrt{3+2^{\frac{3}{2}}}\sin(2f_0\pi T)\right)2Te^{-BT}z^{-1}"/></p>
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_2(z) = -2T + \left(\cos(2f_0\pi T) - \sqrt{3+2^{\frac{3}{2}}}\sin(2f_0\pi T)\right)2Te^{-BT}z^{-1}"/></p>
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_3(z) = -2T + \left(\cos(2f_0\pi T) + \sqrt{3-2^{\frac{3}{2}}}\sin(2f_0\pi T)\right)2Te^{-BT}z^{-1}"/></p>
+
+<p align="center"><img src="http://latex.codecogs.com/gif.latex?B_4(z) = -2T + \left(\cos(2f_0\pi T) - \sqrt{3-2^{\frac{3}{2}}}\sin(2f_0\pi T)\right)2Te^{-BT}z^{-1}"/></p>
+
+可以看到，它们唯一不同点在于两个符号的正负不同。为了方便实现可以定义一个函数，给定生成零点的第二项的系数的函数`zero_func`，生成一个(或多个)IIR滤波器的参数。用和全极点滤波器类似的方法，以下Matlab代码生成一个(或多个)极点-零点滤波器的参数，给定`zero_func`函数。
+
+```matlab
+function [B, A] = make_erb_pass_polezero_cascade( ...
+  fs, pass_freq, pass_band, zero_func)
+    T = 1 / fs;
+    f0 = pass_freq;
+    BW = 1.019 * 2 * pi * pass_band;
+    E = exp(BW * T);
+    n_channel = length(pass_freq);
+    
+    B = zeros(n_channel, 2);
+    A = zeros(n_channel, 3);
+    B(:, 1) = T;
+    B(:, 2) = zero_func(T, f0, E);
+    A(:, 1) = 1;
+    A(:, 2) = - 2 * cos(2 * f0 * pi * T) ./ E;
+    A(:, 3) = E .^ (-2);
+    cz = exp(- 2 * j * pi * f0 * T);
+    g = (T + B(:, 2) .* cz) ./ ...
+        (1 + A(:, 2) .* cz + A(:, 3) .* cz .^ 2);
+    B(:, 1) ./= abs(g);
+    B(:, 2) ./= abs(g);
+end
+```
+
+类似`make_erb_bank_allpole_cascade`，以下代码根据采样频率和各频道中心频率生成GTF滤波器组的参数：
+
+```matlab
+function [B1, B2, B3, B4, A] = make_erb_bank_polezero_cascade( ...
+  fs, bank_freq)
+    BW = erb_bandwidth(bank_freq);
+    f0 = bank_freq;
+    zcoef1 = @(T, cf, E) - (T * cos(2 * f0 * pi * T) ./ E ...
+                         + sqrt(3 + 2 ^ 1.5) * T * sin(2 * f0 * pi * T) ./ E);
+    zcoef2 = @(T, cf, E) - (T * cos(2 * f0 * pi * T) ./ E ...
+                         - sqrt(3 + 2 ^ 1.5) * T * sin(2 * f0 * pi * T) ./ E);
+    zcoef3 = @(T, cf, E) - (T * cos(2 * f0 * pi * T) ./ E ...
+                         + sqrt(3 - 2 ^ 1.5) * T * sin(2 * f0 * pi * T) ./ E);
+    zcoef4 = @(T, cf, E) - (T * cos(2 * f0 * pi * T) ./ E ...
+                         - sqrt(3 - 2 ^ 1.5) * T * sin(2 * f0 * pi * T) ./ E);
+    
+    [B1 A] = make_erb_pass_polezero_cascade(fs, bank_freq, BW, zcoef1);
+    B2     = make_erb_pass_polezero_cascade(fs, bank_freq, BW, zcoef2);
+    B3     = make_erb_pass_polezero_cascade(fs, bank_freq, BW, zcoef3);
+    B4     = make_erb_pass_polezero_cascade(fs, bank_freq, BW, zcoef4);
+end
+```
+
+在执行滤波时，唯一的区别是每个滤波器的零点参数不同：
+
+```matlab
+function y = gtf_polezero(B1, B2, B3, B4, A, x)
+    n_channel = rows(A);
+    y = zeros(length(x), n_channel);
+    for i = 1:n_channel
+        y(:, i) = filter(B1(i, :), A(i, :), x);
+        y(:, i) = filter(B2(i, :), A(i, :), y(:, i));
+        y(:, i) = filter(B3(i, :), A(i, :), y(:, i));
+        y(:, i) = filter(B4(i, :), A(i, :), y(:, i));
+    end
+end
+```
+
+下图比较了三种方法(FIR, 全极点IIR，极点-零点IIR)实现的GTF滤波器的脉冲响应和频率响应，FIR应当是最准确的；可以看到全极点IIR产生了较大的频谱倾斜：
+
+<p align="center"><img src="https://cloud.githubusercontent.com/assets/4531595/5791640/20482e48-9f1e-11e4-9656-b88fcc7c3186.png" width="900px"/></p>
+
+极点-零点IIR实现的GTF滤波器带来了性能和质量的折衷，所以这是最为常用的实现方式之一。
+
 ###3.4 STFT实现
 
-(撰写中，未完待续……)
+基于FIR或IIR滤波器的实现必须要我们对时域信号进行滤波，尽管后者已经把效率提高了百倍，有时还是不甚满意。在对质量要求不高的场合下，完全可以把这个操作搬到频域进行：把采样过的单位圆代入3.3中的传递函数(Matlab中的`freqz`函数)，获得频率响应，和输入信号的频谱或短时频谱相乘，使用STFT合成，转换回时域。如果我们需要的仅是各频道的短时能量，那么直接求得相乘后频谱的能量即可。具体实现方式和[求得MFCC的过程](http://practicalcryptography.com/miscellaneous/machine-learning/guide-mel-frequency-cepstral-coefficients-mfccs/)类似(只是不需要DCT)，这里就不详述了。
+
+这样做的缺点在于牺牲了高频的时间分辨率——高频的GTF滤波器衰减速度极快，延迟低，然而傅立叶变换把所有频率的时间分辨率都归一了。好在一般的应用不需要那么高的时间分辨率，而STFT实现对效率的提升很明显，特别是对于Matlab这种方便做矩阵计算的语言。在参考文献的Ellis-2009中可以找到一个基于STFT的GTF滤波器组实现。
+
+###3.5 使用GTF滤波器组生成声谱图
+
+这是一个最为简易、粗糙的应用，仅仅为了向你举例如何使用GTF滤波器组：
+
+```matlab
+
+[x fs] = wavread('sound.wav');
+n = length(x);
+n_channel = 64;
+
+c = make_erb_freqs(8000, n_channel);
+[B1, B2, B3, B4, A] = make_erb_bank_polezero_cascade(fs, c);
+y = gtf_polezero(B1, B2, B3, B4, A, x);
+
+for i = 1:n_channel
+    % 和一个[1 1 1 ... 1]卷积，相当于做移动平均，以求得短时能量
+    Y(:, i) = conv(y(:, i) .^ 2, ones(200, 1) / 200);
+end
+
+imagesc(log(Y(1:round(n/400):n, :))'); % 在每个输出信号中均匀地取400个采样，获得对数谱，绘制
+xlim([0 400]);
+ylim([0 n_channel]);
+```
+
+如果运行成功，会产生如第一节中所示的声谱图。注意用卷积计算短时能量的方法虽然剩了一点代码，但是带来了极大的计算负担，实际应用中每隔数百采样计算短时能量即可。
 
 A. 参考文献
 ---
