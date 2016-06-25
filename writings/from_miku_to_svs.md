@@ -59,7 +59,7 @@ A.V. Oppenheim教授的《离散时间信号处理》在业界被称为圣经，
 *   Coursera上[UPF的音乐音频信号处理课](https://www.coursera.org/course/audio)
 
 内容上稍有区别，从名字也能看出来。难度上前者偏难一点。另外前者偏理论，后者偏应用。
-两个视频看完你就算是入门啦，然后推荐(但不是必须)看Joe. O. Smith教授的[频谱音频信号处理](https://ccrma.stanford.edu/~jos/sasp/)一书来巩固补缺，若还愿意找虐，就去过遍圣经吧。
+两个视频看完你就算是入门啦，然后推荐(但不是必须)看Julius. O. Smith教授的[频谱音频信号处理](https://ccrma.stanford.edu/~jos/sasp/)一书来巩固补缺，若还愿意找虐，就去过遍圣经吧。
 
 ###机器学习
 
