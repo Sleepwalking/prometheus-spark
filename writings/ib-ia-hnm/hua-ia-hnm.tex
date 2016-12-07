@@ -1,0 +1,375 @@
+\documentclass[dvips]{article}
+\usepackage{graphicx}
+\usepackage{geometry}
+\usepackage{indentfirst}
+\usepackage{amsmath}
+\usepackage{mathtools}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\usepackage{float}
+\geometry{margin=3cm}
+\setlength{\skip\footins}{2cm}
+\allowdisplaybreaks
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\matr}[1]{\mathbf{#1}}
+
+\begin{document}
+
+\title{Efficient Initialization of Linear System for Parameter Estimation of HNM Speech Model}
+
+\author{Kanru Hua}
+\date{March 16, 2015}
+ 
+%-----------------------------------------------------------------------
+% If your printer does not reproduce dimensions exactly, it may be
+% necessary to remove the % signs and adjust the dimensions in the
+% following commands:
+%
+%     \setlength{\textheight}{24cm}
+%     \setlength{\textwidth}{16cm}
+%
+% Similarly for the following, if you need to adjust the positioning
+% on the paper:
+%
+%     \setlength{\topmargin}{-2cm}
+%     \setlength{\lowermargin}{-2cm}
+%     \setlength{\oddsidemargin}{0pt}
+%     \setlength{\evensidemargin}{0pt}
+%------------------------------------------------------------------------
+ 
+\maketitle % this produces the title block
+ 
+\begin{abstract}
+In the context of speech synthesis, HNM (Harmonic Noise Model) models speech signal with a harmonic component and a filtered noise component. The common approach to estimate the harmonic component involves solving a linear system comprising of a Toeplitz matrix and a vector. However the initialization of this linear system is relatively computationally expensive, comparing to the matrix inverse operation. This paper presents an optimized initialization method. By exploiting the similarity between the matrix elements and FT (Fourier Transform), the time complexity is reduced from quadratic to linearithmic, without sacrificing precision.
+\end{abstract}
+
+\section*{Background}
+
+This essay is based on part of the author's personal research in an attempt to build a singing voice synthesis system. The author, Kanru Hua (Candidate number: 001458-0045, Shanghai Pinghe School), has been self-teaching speech signal processing since 4 years ago. His research interests are speech analysis, speech synthesis and machine learning.
+
+Readers who are not familiar with the context of this essay may refer to \cite{stylianou-1996} and \cite{smith}. In addition, graphical visualization of each step in the proposed method is included in the Appendix to help understand.
+
+\section{Introduction}
+
+HNM\cite{stylianou-1996} is a widely used signal model for speech synthesis. In HNM model, time domain speech signal is represented as the sum of a time-varying harmonic signal and a time-varying filtered white noise signal. The former comprises of a few (around 30 to 80) sinusoidal harmonics, each of different amplitudes and phases, while the later can be modeled by filter coefficients, or more generally spectral envelope. Once the harmonic and noise parameters are found, the synthesis of speech is simply adding up sinusoids and filtered white noise. The model is noted for its flexibility and synthesis quality. Pitch and time-scale modification can be achieved by scaling the harmonic frequencies and amplitudes. Applications in speech synthesis system have shown that HNM synthesis backend is able to produce high quality speech superior to other techniques\cite{syrdal-1998}.
+
+This paper focuses on the estimation of harmonic parameters, in the analysis process of a HNM model. The original approach estimates harmonic phases and amplitudes under a least-squares criterion which minimizes the local square error between synthesized harmonic signal and the given speech signal. The analysis is carried out frame-wise, i.e., around a chain of time instants.
+
+Since the speech is assumed to be harmonic, the frequency of each harmonic is an integer multiple of the fundamental frequency. Under this assumption the least-squares problem can be described by a linear system of the form $\matr{R}x = \matr{b}$, where $\matr{R}$ is a Toeplitz matrix, $\matr{b}$ is a column vector, and $x$ is the unknown vector containing amplitudes and phases information. As pointed out in the original paper\cite{stylianou-1996}, this equation can be solved efficiently using Levinson-Durbin recursion. However, the initialization of $\matr{R}$ and $\matr{b}$ is often more time-consuming than solving the matrix inverse.
+
+We propose an efficient method to initialize the above matrix and vector elements. The elements of $\matr{R}$ and $\matr{b}$ are interpreted as sampled spectrums of the DTFT (Discrete Time Fourier Transform) of the analysis window and windowed signal, respectively. Then elements of $\matr{R}$ can be computed by sampling the DTFT of a squared Hamming window, and $\matr{b}$ can be efficiently computed by applying NUFFT (Non-Uniform Fast Fourier Transform)\cite{greengard-2004} to the windowed signal, with proper normalization.
+
+The proposed method is able to produce the identical result as the original approach, with totally negligible numerical errors. For the computation of $\matr{R}$, time complexity is reduced from $O(n^2)$ to $O(n)$; for computing $\matr{b}$, time complexity is reduced from $O(n^2)$ to $O(n\log n)$.
+
+The rest of this paper is organized as follows. Section 2 reviews the original approach of the parameter estimation problem. Section 3 reformulates the problem in terms of resampled DTFT spectrums. The fast initialization of matrix $\matr{R}$ is derived in Section 4. This is done by using the closed-form of the DTFT of a squared Hamming window. Initialization of vector $\matr{b}$ is also presented in Section 4, with a brief description of NUFFT. Section 5 summarizes the proposed method and suggests some future research directions.
+
+\section{The Original Approach}
+
+This section briefly reviews the least-square problem formulation and the original initialization method by directly evaluating matrix elements. To keep it consistent, same notations as in \cite{stylianou-1996} are used throughout this paper.
+
+In a HNM model, the sinusoidal components are assumed to be harmonic and stationary around local time instants,\footnote{Uniform sampling rate is assumed.}
+
+\begin{equation}
+a_k(t) = a_k(t^i_a)
+\end{equation}
+\begin{equation}
+f_0(t) = f_0(t^i_a)
+\end{equation}
+
+where $a_k(t)$ is a function of the amplitude of the k-th harmonic at time t and $f_0(t)$ is the function of fundamental frequency at time t. $t^i_a$ is the time center of the i-th analysis frame.
+
+The harmonic component around time instant $t^i_a$ is,
+
+\begin{equation} \label{origh}
+\hat{h}(t) = \sum_{k = 1}^{L} a_k(t^i_a)\cos(2\pi k f_0(t^i_a)(t - t^i_a) + \phi_k(t^i_a))
+\end{equation}
+
+where $L$ is the number of harmonics; $\phi_k(t^i_a)$ is the phase of the k-th harmonic at time instant $t^i_a$ in radians.
+
+The optimization objective is to minimize the square error between harmonic signal $\hat{h}(t)$ and a given speech signal $s(t)$. Since the noise component in HNM is defined as the difference between speech signal and harmonic signal, i.e., $s(t) - \hat{h}(t)$, they are not considered in the estimation of harmonic component\footnote{In other words, the noise component is minimized under least squares criterion.}. In practice, the error needs to be windowed around $t^i_a$ because HNM model assumes local stationary characteristic of speech. Hamming window is chosen in order to put more emphasis on the error close to $t^i_a$. The objective is defined as,
+
+\begin{equation} \label{objective}
+\{a_k^*(t^i_a), \phi_k^*(t^i_a)\} = \underset{a_k(t^i_a), \phi_k(t^i_a)}{\arg\min} \sum_{t = t^i_a - N}^{t^i_a + N} \left(w_{2N + 1}(t)(s(t) - \hat{h}(t))\right)^2
+\end{equation}
+\begin{equation} \label{symhamm0}
+w_N(t) = \alpha + 2\beta\cos(\frac{2\pi t}{N - 1})
+\end{equation}
+
+where $N$ is the period length (the nearest integer to $\frac{1}{f_0(t^i_a)}$); $w_N(t)$ is the function of a Hamming window of length N. According to the definition of a Hamming window, $\alpha = 0.54$ and $\beta = 0.23$. Note that the analysis window has an odd length of $2N + 1$.
+
+Setting the derivative of (\ref{objective}) to 0, we can obtain a set of equations which lead to the optimal parameters. However, it is suggested to modify (\ref{origh}) by taking out the phase term and replacing $a_k(t^i_a)$ with a complex number $A_k(t^i_a)$ to simplify the solving step,
+
+\begin{equation} \label{newh}
+\hat{h}(t) = \sum_{k = -L}^{k = L} A_k(t^i_a) e^{j 2\pi k f_0(t^i_a)(t - t^i_a)}
+\end{equation}
+
+and $A_k(t^i_a) = \frac{1}{2} a_k(t^i_a) e^{j \phi k(t^i_a)}$. It's worth pointing out that $A_k(t^i_a) = A^*_{-k}(t^i_a)$ and when $k = 0$, an additional DC term is introduced.
+
+Here we leave out the intermediate steps in \cite{stylianou-1996} and present the final linear system derived from (\ref{objective}) and (\ref{newh}),
+
+\begin{equation} \label{linsys}
+\matr{R}x = \matr{b}
+\end{equation}
+
+where $\matr{R}$ is a $(2L + 1) \times (2L + 1)$ Toeplitz matrix with elements $r_{ik}$. To keep it simple, the $t^i_a$ terms are taken away,
+
+\begin{equation} \label{rik}
+r_{ik} = \sum_{t = -N}^{N} w_{2N + 1}^2(t) e^{j 2\pi (i - L - 1) f_0 t - j 2\pi (k - L - 1) f_0 t}
+\end{equation}
+
+It is easy to show that $r_{ik} = r_{i+p, k+p}$, so $\matr{R}$ is a Toeplitz matrix.
+
+$\matr{b}$ in (\ref{linsys}) is a $(2L + 1) \times 1$ vector with elements $b_k$ as
+
+\begin{equation} \label{bk}
+b_k = \sum_{t = -N}^{N} w_{2N + 1}^2(t) s(t) e^{-j 2\pi (k - L - 1)f_0 t}
+\end{equation}
+
+The linear system in (\ref{linsys}) can be initialized by computing (\ref{rik}) and (\ref{bk}) for all $i$ and $k$. Because $\matr{R}$ is a Toeplitz matrix, it has only $2L + 1$ unique elements that can be denoted as
+
+\begin{equation} \label{rl}
+r_{ik} = r_l = \sum_{t = -N}^{N} w_{2N + 1}^2(t) e^{-j 2\pi t f_0 l} \mid_{l = k - i, -2L \leq l \leq 2L}
+\end{equation}
+
+Thus the initialization in the original approach requires $2L + 1$ iterations for both $\matr{R}$ and $\matr{b}$, each of which involves $2N + 1$ complex exponential operations. Hence the time complexity for initialization is of the order $O(LN)$, which is approximately the same order as that for inversing a $(2L + 1) \times (2L + 1)$ Toeplitz matrix using Levinson-Durbin algorithm.
+
+\section{Fourierian Interpretation of Matrix Elements}
+
+Based on the observation that equation (\ref{bk}) and (\ref{rl}) show similarity to the Discrete Fourier Transform of $w^2_{2N + 1}(t)$ and $w^2_{2N + 1}(t)s(t)$, respectively, this section establishes an interpretation of $r_l$ and $b_k$ as resampled DFT spectrums.
+
+The $2N + 1$ points DFT of a squared Hamming window is,
+
+\begin{equation} \label{dftsqhamm}
+W_{2N + 1}(k) = \sum_{t = -N}^{N} w^2_{2N + 1}(t) e^{-j 2\pi \frac{kt}{2N + 1}}
+\end{equation}
+
+Here the frequency index $k$ is assumed to be continuous, in the DTFT sense. However the unit of k is in bins instead of radians, so that we can easily compare this equation to (\ref{rl}). The only difference between (\ref{rl}) and (\ref{dftsqhamm}) is the exponent part. By scaling $k$, $r_l$ can be represented using $W_{2N + 1}(k)$,
+
+\begin{equation} \label{rl-to-dft}
+r_l = W_{2N + 1}\left((2N + 1)f_0l\right)
+\end{equation}
+
+which means that $r_l$ is equivalent to resampling $W_{2N + 1}(k)$ by a factor of $(2N + 1)f_0$. Note that $N \approx \frac{1}{f_0}$, so $r_l$ is roughly a half-downsampled version of $W_{2N + 1}(k)$ when $f_0 \ll 1$, which holds in most of the cases. But this approximation lacks in precision and is simply presented to help get the picture.
+
+In the same manner $b_k$ is derived as
+
+\begin{equation} \label{bk-to-dft}
+b_k = X_{2N + 1}\left((2N + 1)f_0(k - L - 1)\right)
+\end{equation}
+\begin{equation} \label{bk-to-dft}
+X_{2N + 1}(k) = \sum_{t = -N}^{N} w^2_{2N + 1}(t)s(t) e^{-j 2\pi \frac{kt}{2N + 1}}
+\end{equation}
+
+where $X_{2N + 1}(k)$ is the DFT (assumed continuous frequency) of the speech signal multiplied by a squared Hamming window.
+
+\section{Efficient Initialization based on Fourier Transform}
+
+In this section efficient methods for computing $r_l$ and $b_k$ are presented respectively. Although applying FFT to (possibly zero-padded) $w^2_{2N + 1}(t)$ and $w^2_{2N + 1}(t)s(t)$ signals and then using sinc interpolation to compute $r_l$ and $b_k$ is possible, very high order sinc kernel is needed to get a reasonable precision, at the expense of time complexity. For $r_l$ and $b_k$, we propose different methods for their initialization in the following text.
+
+\subsection{Computation of $r_l$}
+
+Since equation (\ref{dftsqhamm}) is independent of the input signal $s(t)$ and fundamental frequency $f_0$, and a Hamming window is the sum of a constant term and a trigonometry function, it is easy to derive the closed form of the DFT of a squared Hamming window. Then the closed-form is plugged into (\ref{rl-to-dft}) so that $r_l$ can be directly computed by evaluating the closed-form expression.
+
+Recall the definition (\ref{symhamm0}) of a symmetric Hamming window,
+
+\begin{equation} \label{symhammN}
+w_N(t) = \alpha + 2\beta\cos(\frac{2\pi t}{N - 1})
+\end{equation}
+
+Then $w_N^2(t)$ is,
+
+\begin{align} \label{hammsq}
+w_N^2(t) &= \alpha^2 + 4\beta^2\cos^2(\frac{2\pi t}{N - 1}) + 4\alpha\beta\cos(\frac{2\pi t}{N - 1}) \\
+		 &= \alpha^2 + 4\beta^2\frac{\cos(\frac{4\pi t}{N - 1}) + 1}{2} + 4\alpha\beta\cos(\frac{2\pi t}{N - 1}) \\
+		 &= \alpha^2 + 2\beta^2 + 2\beta^2\cos(\frac{4\pi t}{N - 1}) + 4\alpha\beta\cos(\frac{2\pi t}{N - 1})
+\end{align}
+
+Let $\omega = 2\pi\frac{k}{N}$, the DTFT of $w_N^2(t)$ (assume N is \emph{odd} in our case) is,
+
+\newcommand{\nrng}{(N - 1) / 2}
+\begin{align}
+W_N(\omega) &= \sum_{t = -\nrng}^{\nrng} [\alpha^2 + 2\beta^2 + 2\beta^2\cos(\frac{4\pi t}{N - 1}) + 4\alpha\beta\cos(\frac{2\pi t}{N - 1})] e^{-j\omega t} \\
+			&\phantom{}
+			\begin{aligned}
+			= (\alpha^2 + 2\beta^2) \sum_{t} e^{-j\omega t} &+ 2\beta^2 \sum_{t} \cos(\frac{4\pi t}{N - 1}) e^{-j\omega t} \\
+			&+ 4\alpha\beta \sum_{t} \cos(\frac{2\pi t}{N - 1}) e^{-j\omega t}
+			\end{aligned} \\
+			&\phantom{}
+			\begin{aligned}
+			= (\alpha^2 + 2\beta^2) \sum_{t} e^{-j\omega t} &+ \beta^2 \sum_{t} \left(e^{j4\pi\frac{t}{N - 1}} + e^{-j4\pi\frac{t}{N - 1}} \right) e^{-j\omega t} \\
+			&+ 2\alpha\beta \sum_{t} \left(e^{j2\pi\frac{t}{N - 1}} + e^{-j2\pi\frac{t}{N - 1}} \right) e^{-j\omega t}
+			\end{aligned} \\
+			&\phantom{}
+			\begin{aligned} \label{dtfthammsq}
+			= (\alpha^2 + 2\beta^2) \sum_{t} e^{-j\omega t}
+				&+ \beta^2 \left(\sum_{t} e^{-j(w - \frac{4\pi}{N - 1}) t}
+					+ \sum_{t} e^{-j(w + \frac{4\pi}{N - 1}) t} \right) \\
+			&+ 2\alpha\beta \left(\sum_{t} e^{-j(w - \frac{2\pi}{N - 1}) t}
+					+ \sum_{t} e^{-j(w + \frac{2\pi}{N - 1}) t} \right)
+			\end{aligned}
+\end{align}
+
+where all $t$ range from $-\frac{N - 1}{2}$ to $\frac{N - 1}{2}$.
+
+At the core of (\ref{dtfthammsq}) is an aliased sinc function, whose closed form can be derived using properties of a geometric sequence\cite{smith},
+
+\begin{align}
+\sum_{t = -\nrng}^{\nrng} e^{-j\omega t} &= \frac{e^{j\omega \frac{N - 1}{2}} - e^{-j\omega \frac{N + 1}{2}}}{1 - e^{-j\omega}} \\
+&= \frac{e^{-j\omega \frac{1}{2}} \left(e^{j\omega \frac{N}{2}} - e^{-j\omega \frac{N}{2}}\right)}{1 - e^{-j\omega}} \\
+&= \frac{2j \sin(\omega \frac{N}{2})}{e^{\frac{1}{2}j\omega} - e^{-\frac{1}{2}j\omega}} \\
+&= \frac{\sin(N \frac{\omega}{2})}{\sin(\frac{\omega}{2})}
+ = \frac{\sin(\pi k)}{\sin(\pi \frac{k}{N})}
+\end{align}
+
+which is a real number and can be easily computed. We can define the above equation as the ``discrete aliased sinc function",
+
+\newcommand{\dasinc}{\mathrm{dasinc}}
+\begin{align} \label{asasinc}
+\dasinc_N(k) \overset{\Delta}{=} \sum_{t = \nrng}^{\nrng} e^{-j\omega t} = \frac{\sin(\pi k)}{\sin(\pi \frac{k}{N})}
+\end{align}
+
+By plugging (\ref{asasinc}) into (\ref{dtfthammsq}), we can finally get the closed form of $W_N(k)$, the spectrum of an odd-length squared Hamming window,
+
+\begin{align*}
+W_N(k) &= (\alpha^2 + 2\beta^2) \dasinc_N(k) \\
+       &+ \beta^2 \left(\dasinc_N(k - \frac{2N}{N - 1}) + \dasinc_N(k + \frac{2N}{N - 1})\right) \\
+       &+ 2\alpha\beta \left(\dasinc_N(k - \frac{N}{N - 1}) + \dasinc_N(k + \frac{N}{N - 1})\right) \numberthis\label{closed-wnk}
+\end{align*}
+
+Thus, $r_l$ can be efficiently computed in linear time by substituting (\ref{closed-wnk}) into (\ref{rl-to-dft}). Note that the above derivation can be easily adapted to any member of Generalized Hamming Window Family and Blackman-Harris Window Family, provided that the time domain signal consists of only constant term and sinusoids, or power of sinusoids. Note that when $k = nN, \forall n \in \mathrm{Z}$, the denominator of $\dasinc(k)$ becomes zero and the function turns invalid. This is solved by adding a small constant to k. Also note that $W_N(k)$ is real because $\dasinc_N(k)$ is always real. So the computation of the inverse of $\matr{R}$ does not have to involve complex arithmetics. This is even true for the original approach (\ref{rik}) because two methods produce the same result.
+
+\subsection{Computation of $b_k$}
+
+As mentioned before, based on the resampled spectrum property of $b_k$ elements, applying sinc interpolation to the FFT spectrum of $w_{2N + 2}^2(t)s(t)$ to get $b_k$ is viable but computationally expensive. Another idea to achieve this is to modify the FFT algorithm to support non-integer-sampled frequencies. However, non-integer frequencies do not have the odd and even property which is the key to conventional radix-based FFT algorithms\cite{cooley-1965}.
+
+This idea led us to use NUFFT (Non-Uniform sampled Fast Fourier Transform)\cite{greengard-2004} that is a generalization of this case. NUFFT supports both time and frequency domain non-uniform and non-integer sampled inputs/outputs. To illustrate its principle, recall the definition of $b_k$ in (\ref{bk}), with changes on index $k$ to simplify the exponent,
+
+\begin{equation} \label{bksimexp}
+b_{k + L + 1} = \sum_{t = -N}^{N} w_{2N + 1}^2(t) s(t) e^{-j 2\pi k f_0 t}
+\end{equation}
+
+If $t$ were to be scaled by $\frac{1}{f_0 N}$, (\ref{bksimexp}) becomes a time-domain non-integer sampled but frequency-domain integer sampled DFT. Thus if interpolation is carried directly on the input signal in time domain, a standard FFT routine can be applied to give the non-integer sampled spectrum $b_k$. Aliasing is negligible since $\frac{1}{f_0 N} \approx 1$.
+
+In NUFFT both time and frequency domains are allowed to be non-uniform sampled, and the interpolation is done by convolving the input with a heat kernel, followed by sampling at the desired resolution. Then a standard FFT is applied on the resampled signal. The output is multiplied by the inverse Fourier Transform of the heat kernel so as to cancel the convolution effect.
+
+Let the time domain sampling be uniform and frequency domain sample points be $2\pi k f_0 t, t \in [-N, N]$, we have successfully utilized NUFFT to compute $b_k$ elements. Normalization by $2N + 1$ is probably needed due to implementation differences. Since the standard FFT runs in $O(n \log n)$, while the preprocessing step (convolution with heat kernel) is negligible as a result of the fast decaying property of heat kernel (so only low order kernels are required to achieve reasonable precision), the optimized computation of $b_k$ has a time complexity of $O(n \log n)$.
+
+%\subsubsection{Figures}
+%
+%All figures should be quoted in consecutive numerical order
+%in the text and should, for example, be referred to as
+%`Fig. 3, Figs. 3-5', etc., or `Figure' at the beginning of a
+%sentence.
+%All figures, diagrams, etc., must remain within the same area.
+%
+%Figure captions should be brief and, if possible,
+%go {\it below} the illustration, e.g. `Fig. 3 A short title'.
+%They should be typed in point size 9. Very detailed illustrations may
+%require a full page; if necessary, they may be placed sideways on the
+%page; when this is done, no text may appear on that page, and the
+%caption must also read sideways. 
+%
+%Where possible, figures should be prepared electronically.
+%We can handle Encapsulated Postscript.
+%
+%Here is an example of a figure.
+%
+%\begin{figure}
+%\label{fig:cc}
+%\caption{Example of a figure; but it's empty
+%until you provide an eps (encapsulated postscript)
+%file. (See the source page.)}
+%\begin{center}
+%\includegraphics[scale=0.8]{test.eps}
+%%Uncomment the line above and substitute the filename of your eps file.
+%\end{center}
+%\end{figure}
+
+%\setlength{\parskip}{-0.01cm}
+\section{Conclusion}
+
+An efficient method to initialize the linear system used in the least-squares estimation of HNM harmonic parameters is proposed. The Toeplitz matrix elements are computed from a symbolic DFT of squared analysis window; the vector elements are computed using NUFFT. Time complexity for initialization has been reduced by roughly a logarithmic order (a speed up between $n$ and $\log n$ times).
+
+For even better performance, square rooted Hamming window and MLT sines window\cite{smith} are suggested because $W_N(k)$ would then have fewer terms. It's worth pointing out that $r_{ik}$ can also be computed using NUFFT, in the same manner as $b_k$. This enables us to use arbitrary window which may not be sinusoidal.
+
+Comparing to ABS/OLA\cite{george-1997}, the proposed method runs at a comparable speed but is able to find the global minimum of the objective function (\ref{objective}), and thus achieves better modeling accuracy.
+
+The proposed method can be easily adapted for the least-squares estimation of the more general sinusoidal model or Deterministic plus Stochastic Model\cite{serra-1990}, given frequency estimate for each sinusoid. The harmonic frequency term $k f_0$ should be replaced by a set of sinusoid frequencies; type-3 NUFFT\cite{greengard-2004} should be used for efficient computation of $b_k$. However, $\matr{R}$ would no longer be a Toeplitz matrix. This indicates that $\matr{R}$ would have a quadratic number of unique elements comparing to a linear number in a Toeplitz matrix. The proposed method will then reduce the complexity for initializing $\matr{R}$ from $O(n^3)$ to $O(n^2)$. In such case tremendous performance improvement is achieved. But on the other hand, the inverse of $\matr{R}$ will also have higher complexity. Our next step is to compare the efficiency of the proposed method with a peak-picking combined with gradient descent-based parameter estimation method for sinusoidal models\cite{hua-2014}.
+
+\section*{Appendix - Graphical Visualization of Parameter Estimation}
+
+This appendix shows an example of parameter estimation for a harmonic model to give the readers an intuition for better understanding. Part of a speech signal (figure \ref{fig:s}) is input into the parameter estimation algorithm. The sampling frequency is 44100Hz; the fundamental at the analysis instant is 142.3Hz. The period is hence $\frac{44100}{142.3} \approx 310$ samples long and the frame size is twice the period length, as shown in figure \ref{fig:s}.
+
+\begin{figure}[H]
+\centering
+\input{sig.tikz}
+\caption{input signal around an analysis time instant}
+\label{fig:s}
+\end{figure}
+
+The next step is to generate $\matr{R}$ by resampling the DTFT of a squared analysis window. We first show the DTFT of a squared hamming window before resampling in figure \ref{fig:sqhamm}.
+
+\begin{figure}[H]
+\centering
+\input{sqhamm2.tikz}
+\caption{DTFT of a squared hamming window}
+\label{fig:sqhamm}
+\end{figure}
+
+Then the resampled DTFT spectrum $r_l$ based on (\ref{rl-to-dft}) is shown in figure \ref{fig:rl} below where the number of harmonics is set to 80. We can see that $r_l$ are chosen such that the side lobes are suppressed.
+
+\begin{figure}[H]
+\centering
+\input{resamphamm.tikz}
+\caption{resampled DTFT of a squared hamming window}
+\label{fig:rl}
+\end{figure}
+
+While $b_k$ are computed using NUFFT as a non-integer frequency resampled DFT of the windowed speech signal. Accordingly, we show the DFT spectrum and the resampled DFT spectrum in figure \ref{fig:dftsig} and figure \ref{fig:resampdftsig} respectively.
+
+\begin{figure}[H]
+\centering
+\input{dftsig.tikz}
+\caption{DFT of the windowed speech signal}
+\label{fig:dftsig}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\input{resampdft.tikz}
+\caption{resampled DFT of the windowed speech signal}
+\label{fig:resampdftsig}
+\end{figure}
+
+Finally, solving the linear system (\ref{linsys}) we get the amplitude and phase of each harmonic as shown in figure \ref{fig:harest}.
+
+\begin{figure}[H]
+\centering
+\input{harest2.tikz}
+\caption{estimated parameters of harmonics}
+\label{fig:harest}
+\end{figure}
+
+\newpage
+\begin{thebibliography}{99}
+
+%\setlength{\parskip}{-0.01cm}
+\bibitem{stylianou-1996}{Stylianou, Yannis. ``Harmonic plus noise models for speech, combined with statistical methods, for speech and speaker modification." Diss. Ecole Nationale Supérieure des Télécommunications, 1996.}
+
+\bibitem{syrdal-1998}{Syrdal, Ann, et al. ``TD-PSOLA versus harmonic plus noise model in diphone based speech synthesis." Acoustics, Speech and Signal Processing, 1998. Proceedings of the 1998 IEEE International Conference on. Vol. 1. IEEE, 1998.}
+
+\bibitem{greengard-2004}{Greengard, Leslie, and June-Yub Lee. ``Accelerating the nonuniform fast Fourier transform." SIAM review 46.3 (2004): 443-454.}
+
+\bibitem{smith}{Smith, Julius O. ``Spectral Audio Signal Processing." W3K Publishing. ISBN 978-0-9745607-3-1.}
+
+\bibitem{cooley-1965}{Cooley, James W., and John W. Tukey. ``An algorithm for the machine calculation of complex Fourier series." Mathematics of computation 19.90 (1965): 297-301.}
+
+\bibitem{george-1997}{George, E. Bryan, and Mark JT Smith. ``Speech analysis/synthesis and modification using an analysis-by-synthesis/overlap-add sinusoidal model." Speech and Audio Processing, IEEE Transactions on 5.5 (1997): 389-406.}
+
+\bibitem{serra-1990}{Serra, Xavier, and Julius O. Smith. ``Spectral modeling synthesis: A sound analysis/synthesis system based on a deterministic plus stochastic decomposition." Computer Music Journal (1990): 12-24.}
+
+\bibitem{hua-2014}{Hua, Kanru. ``A method to improve the extraction quality of periodic component of speech". Patent Application. CN201410457379. 2014.}
+
+\end{thebibliography}
+
+\end{document}
